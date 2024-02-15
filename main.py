@@ -7,6 +7,13 @@ from PIL import Image
 from io import BytesIO
 
 
+def ObterSiglaPartido(partido):
+    url = f'https://www.camara.leg.br/internet/Deputado/img/partidos/{partido}.gif'
+    # Faz a requisição
+    return url
+
+    
+
 def ObterDeputados():
     url = 'https://www.camara.leg.br/SitCamaraWS/Deputados.asmx/ObterDeputados'
     # Faz a requisição
@@ -139,11 +146,12 @@ quantidade_deputados = len(nome_deputados)
 
 st.image('logo.png',use_column_width=False)
 st.info('DEPUTADO FEDERAL ',icon="ℹ️")
-st.header(f'{nome} - PARTIDO {partido}')
+icone_partido = ObterSiglaPartido(partido)
+if icone_partido:
+    st.image(icone_partido)
+st.header(f'{nome} - PARTIDO {partido}', divider='blue')
 conteudo = df[df['nome'] == nome].iloc[0]
 
-
-st.divider()
 
 col1,col2 = st.columns(2)
 
@@ -161,21 +169,40 @@ col2.markdown(f"**Telefone :** {conteudo['fone']}")
 col2.markdown(f"**Email :** {conteudo['email']}")
 st.markdown(f"**Numero do Gabinete :** {conteudo['gabinete']} - **Anexo:** {conteudo['anexo']}")
 st.divider()
-
-st.markdown('''Dá acesso aos registros de pagamentos e reembolsos feitos pela Câmara em prol do deputado identificado por {id}, a título da Cota para Exercício da Atividade Parlamentar, a chamada "cota parlamentar".
-
-A lista pode ser filtrada por mês, ano, legislatura, CNPJ ou CPF de um fornecedor.
-
-Se não forem passados os parâmetros de tempo, o serviço retorna os dados dos seis meses anteriores à requisição.''')
 id_cadastro = conteudo['ideCadastro']
 detalhe = ObterDetalhesDeputados(id_cadastro)
-#st.table(detalhe)
+#Est.table(detalhe)
 st.sidebar.divider()
 st.sidebar.info('Despesas Deputados',icon="ℹ️")
-coluna_selecionada = st.sidebar.selectbox('Selecione o Fornecedor',detalhe['Nome do Fornecedor'].value_counts().index)
-df_dep = detalhe[detalhe['Nome do Fornecedor'] == coluna_selecionada].iloc[0]
-st.write(df_dep['URL do Documento'])
+coluna_selecionada = st.sidebar.selectbox("Selecione o Codigo do Documento ", detalhe['Código do Documento'].value_counts().index)
+df_dep = detalhe[detalhe['Código do Documento'] == coluna_selecionada].iloc[0]
+
+st.subheader('Despesas Deputado Federal ', divider='blue')
+
+col1,col2,col3 = st.columns(3)
+col1.subheader('Nome Fornecedor ')
+col1.markdown(f"**{df_dep['Nome do Fornecedor']}**")
+col2.subheader('CNPJ/CPF')
+col2.markdown(f"**{df_dep['CNPJ/CPF do Fornecedor']}**")
+
+col1,col2,col3,col4 = st.columns(4)
+col1.subheader("Data Ano e Mês")
+col1.markdown(f"**Mês:** {df_dep['Mês']} - **Ano :** {df_dep['Ano']}")
+col2.subheader("Tipo Doc")
+col2.markdown(f"**{df_dep['Tipo de Documento']}**")
+col3.subheader("Data Doc ")
+col3.markdown(f"**{df_dep['Data do Documento']}**")
+
+st.header("", divider='blue')
+col1,col2,col3 = st.columns(3)
+col1.metric(label='Valor Documento', value=df_dep['Valor do Documento'])
+col2.metric(label='Valor Liquido', value=df_dep['Valor Líquido'])
+col3.markdown("**Documento da Despesa**", help='Visualização de Despesas')
+col3.link_button("Visualizar Documento", f"{df_dep['URL do Documento']}")
+
 
 # Exibe a coluna selecionada na barra lateral
 
 #fornecedor = st.sidebar.selectbox('Selecione',detalhe[[coluna_selecionada]])
+
+st.caption('Todos dados  utilizados : :blue[https://dadosabertos.camara.leg.br]')
